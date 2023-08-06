@@ -64,7 +64,7 @@ def getSentiment():
         extract the count of Negative sentiment of a reviews from list of comments evaluating the Negative field between the dollar sign, the value must be printed without dollar sign.
         The value of Negative field must be number
 
-        and give the answer in dictionary file
+        and give your answer in dictionary file format.
 
         
 """
