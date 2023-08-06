@@ -30,7 +30,18 @@ os.environ['OPENAI_API_KEY']="d4d01a5d410a4c69823b62d0cc205ea5"
 os.environ["LANGCHAIN_HANDLER"] = "langchain"
 
 
+BASE_URL = "https://pz-ew-aoi-np-digitaltrans-002.openai.azure.com/"
+API_KEY = "d4d01a5d410a4c69823b62d0cc205ea5"
+DEPLOYMENT_NAME = "gpt-35-turbo-16k"
 
+llm = AzureChatOpenAI(
+    openai_api_base=BASE_URL,
+    openai_api_version="2023-03-15-preview",
+    deployment_name=DEPLOYMENT_NAME,
+    openai_api_key=API_KEY,
+    openai_api_type = "azure",
+    temperature=0,max_tokens=500
+)
 
 def getSentiment():
          
@@ -55,10 +66,6 @@ def getSentiment():
 
         and give the answer in dictionary file
 
-        example:
-        Overall sentiment : $Sentiment$ 
-        positive : $positive$
-        negative : $negative$
         
 """
         #Example:
