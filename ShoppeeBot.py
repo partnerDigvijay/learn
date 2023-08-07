@@ -68,6 +68,12 @@ def getSentiment():
 
         
 """
+        
+        #example:
+        #sentiment : $Sentiment$ 
+        #positive : $positive$
+        #negative : $negative$
+
         #Example:
         #Overall sentiment : $sentiment$  , Positive comments : $Positive$, Negative comments: $Negative$ 
         #and Draw the barplot to depict number of Positive comments and Negative comments.
@@ -226,7 +232,7 @@ def main():
                     button1 = gr.Button("OK")
                     button1.click(CustomChatGPT,text1QA,text2QA)
 
-            demo.launch(server_name="0.0.0.0") #server_name="0.0.0.0"
+            demo.launch() #server_name="0.0.0.0"
 
 
 if __name__ == "__main__":
