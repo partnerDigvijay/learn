@@ -17,6 +17,10 @@ import math
 from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
 
+from langchain.text_splitter import RecursiveCharacterTextSplitter,TokenTextSplitter
+from langchain.docstore.document import Document
+from langchain.chains.question_answering import load_qa_chain
+
 
 os.environ['OPENAI_API_TYPE'] = "azure"
 # The API version you want to use: set this to `2022-12-01` for the released version.
@@ -64,9 +68,6 @@ llm_432k = AzureChatOpenAI(
 )
 
 
-from langchain.text_splitter import RecursiveCharacterTextSplitter,TokenTextSplitter
-from langchain.docstore.document import Document
-from langchain.chains.question_answering import load_qa_chain
 
 def getSentiment():
     data = pd.read_csv("data.csv")
@@ -90,10 +91,13 @@ def getSentiment():
 
         and give your answer in below format.
 
+        
         example:
         sentiment : Sentiment , 
         positive : positive , 
         negative : negative 
+
+
         
         {question}
         
