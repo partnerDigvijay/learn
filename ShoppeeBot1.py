@@ -20,6 +20,7 @@ from langchain.chains import LLMChain
 from langchain.text_splitter import RecursiveCharacterTextSplitter,TokenTextSplitter
 from langchain.docstore.document import Document
 from langchain.chains.question_answering import load_qa_chain
+import plotly.express as px
 
 
 os.environ['OPENAI_API_TYPE'] = "azure"
@@ -69,14 +70,50 @@ llm_432k = AzureChatOpenAI(
 
 
 
+def aspect(doc1):
+        
+        templateQue = """You are an advanced virtual assistant, who can help in analyzing customer sentiment from a list of reviews.
+                Each item in the below list is one customer review.
+                Read the reviews and list out 5 aspects people happy about product as possible in english.
+                Read the reviews and list out 5 aspects people unhappy about product as possible in english.
+                
+                {context_str}
+                Example:
+                Top 5 aspects people are happy about:
+                1.
+                2.
+                3.
+                4.
+                5.
+                
+                
+        """
+
+                #extract the Positive sentiment commnets and count it.
+
+                #extract the Negative sentiment comments and count it
+        prompt = PromptTemplate(template=templateQue, input_variables=["context_str"])
+
+        chain = load_qa_chain(llm_4, chain_type="refine",question_prompt = prompt,return_refine_steps=True)
+        #query= user_input
+        query = "Tell me Top 5 aspects people happy about product and 5 aspects people are not happy about product"
+        out = chain({"input_documents":doc1})
+        #print(out['output_text'])  
+        #print(out['intermediate_steps'])
+        return(out['output_text']) 
+
+
+
 def getSentiment():
+ 
     data = pd.read_csv("data.csv")
     data = data[data.comment.notna()]
     # split = RecursiveCharacterTextSplitter(chunk_size=7000,chunk_overlap=0)
     split = TokenTextSplitter(chunk_size=30000,chunk_overlap=5)
     docs = split.split_text("".join(list(data['comment'])))
-    
+
     doc1 = [Document(page_content = d,metadata={'source':'local'}) for d in docs]
+
     templateSent = """Please act as a machine learning model trained for perform a supervised learning task, 
         for evaluation the sentiment of reviews from list of reviews from {context_str} and 
 
@@ -110,11 +147,14 @@ def getSentiment():
         #extract the Negative sentiment comments and count it
     prompt = PromptTemplate(template=templateSent, input_variables=["context_str","question"])
 
-    chain = load_qa_chain(llm_432k, chain_type="refine",question_prompt = prompt,return_refine_steps=True)
+    chain = load_qa_chain(llm_4, chain_type="refine",question_prompt = prompt,return_refine_steps=True)
     query = "Tell me overall sentiment, number of positive sentiment and number of negative sentiment?"
     out = chain({"input_documents":doc1,"question":query})
-    return(out['output_text'])  #(out['intermediate_steps'])  #
+    aspects=aspect(doc1)
+
+    return out['output_text'],aspects  #(out['intermediate_steps'])  #
     
+
 
     
 #jcomments=[]
@@ -163,7 +203,7 @@ def getReviews(URL):
     comments=df.comment
     ratings=df.rating
     jcomments = json.dumps(comments.tolist())
-    response=getSentiment()
+    response,aspects=getSentiment()
     resp = response.replace("{",'').replace("}",'')
     out = response.replace("\n",'')
     try:
@@ -179,21 +219,19 @@ def getReviews(URL):
         neg=0
         
     simple = pd.DataFrame({
-    'Positive & Negative Sentiments': ['Positive', 'Negative'],
+    'Sentiments': ['Positive', 'Negative'],
     'Number of comments': [pos, neg]
        })
+    p =  px.bar(
+    data_frame = simple,
+    color="Sentiments",
+    x="Sentiments",
+    y="Number of comments"
+    )
+
+    return resp,p,aspects
     
-    return resp,gr.BarPlot.update(
-           simple,
-           x="Positive & Negative Sentiments",
-           y="Number of comments",
-           title="",
-           #tooltip=['a', 'b'],
-           y_lim=[0, pos+20]
-       )
-    
-    
-    
+
 
 def CustomChatGPT(user_input):
     data = pd.read_csv("data.csv")
@@ -201,8 +239,9 @@ def CustomChatGPT(user_input):
     # split = RecursiveCharacterTextSplitter(chunk_size=7000,chunk_overlap=0)
     split = TokenTextSplitter(chunk_size=30000,chunk_overlap=5)
     docs = split.split_text("".join(list(data['comment'])))
-    
+
     doc1 = [Document(page_content = d,metadata={'source':'local'}) for d in docs]
+
     templateQue = """You are an advanced virtual assistant, who can help in analyzing customer sentiment from a list of reviews.
         Each item in the below list is one customer review.
         Read the reviews and answer the following question as clearly and succintly as possible in english.
@@ -223,7 +262,7 @@ def CustomChatGPT(user_input):
         #extract the Negative sentiment comments and count it
     prompt = PromptTemplate(template=templateQue, input_variables=["context_str","question"])
 
-    chain = load_qa_chain(llm_432k, chain_type="refine",question_prompt = prompt,return_refine_steps=True)
+    chain = load_qa_chain(llm_4, chain_type="refine",question_prompt = prompt,return_refine_steps=True)
     query= user_input
     #query = "Tell me overall sentiment, number of positive sentiment and number of negative sentiment?"
     out = chain({"input_documents":doc1,"question":query})
@@ -234,6 +273,12 @@ def CustomChatGPT(user_input):
 
 def main():
     with gr.Blocks(title = "Sentiment anlysis") as demo:
+        gr.HTML(f"<h1>{'Sentiment anlysis'}</h1>")
+        description = (
+        "Give the Shoppee Product URL below to get its sentiment on reviews and ask questions."
+        )
+        gr.Markdown(description)
+        
         with gr.Row():
                 text1URL = gr.Textbox(label="URL",min_width=500)
                 text2URL = gr.Textbox(label="Overall Sentiment",min_width=500)
@@ -241,18 +286,20 @@ def main():
                 #Negative = gr.Number(value=neg, label="negative")
                 #boroughs = gr.CheckboxGroup(choices=["Queens", "Brooklyn", "Manhattan", "Bronx", "Staten Island"], value=["Queens", "Brooklyn"], label="Select Boroughs:")
                 #btn = gr.Button(value="Update Filter")
-                #map = gr.Plot()
+                
                 #plot= gr.Plot(16,0)
                 #gr.BarPlot()
-                plot = gr.BarPlot(label = "Graphical Representation",min_width=100) #show_label=False
+                #plot = gr.BarPlot(label = "Graphical Representation",min_width=100) #show_label=False
         
-        
+        with gr.Row():
+           text3Aspect = gr.Textbox(label="Top User Aspects")
+           plot = gr.Plot()
         #with gr.Column():
                 #plot = gr.BarPlot(show_label=False)
                 
         with gr.Row():
                 button1 = gr.Button("Submit")
-                button1.click(getReviews,inputs=text1URL,outputs=[text2URL,plot]) #outputs=[text2URL,plot]
+                button1.click(getReviews,inputs=text1URL,outputs=[text2URL,plot,text3Aspect]) #outputs=[text2URL,plot]
                 #button1.click(getgraph,inputs=,outputs=)
 
         with gr.Row():
@@ -262,7 +309,7 @@ def main():
         with gr.Row():
                 button1 = gr.Button("OK")
                 button1.click(CustomChatGPT,text1QA,text2QA)
-
+    #demo.title="Sentiment Anlysis!"
     demo.launch(server_name="0.0.0.0") #server_name="0.0.0.0"
 
 if __name__ == "__main__":
