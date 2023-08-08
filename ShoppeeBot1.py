@@ -78,26 +78,24 @@ def getSentiment():
     
     doc1 = [Document(page_content = d,metadata={'source':'local'}) for d in docs]
     templateSent = """Please act as a machine learning model trained for perform a supervised learning task, 
-        for extract the sentiment of reviews from list of reviews from {context_str} and 
+        for evaluation the sentiment of reviews from list of reviews from {context_str} and 
 
-        Give your answer evaluating the sentiment field between the dollar sign, the value must be printed without dollar sign.
+
         The value of sentiment must be "positive"  or "negative"
 
-        extract the count of Positive sentiment of a reviews from list of comments evaluating the Positive field between the dollar sign, the value must be printed without dollar sign.
+        evaluate the count of Positive sentiment of a reviews from list of comments.
         The value of Positive field must be number
 
-        extract the count of Negative sentiment of a reviews from list of comments evaluating the Negative field between the dollar sign, the value must be printed without dollar sign.
+        evaluate the count of Negative sentiment of a reviews from list of comments 
         The value of Negative field must be number
 
-        and give your answer in below format.
+        only give your answer in Dictionary file format as below format inside curly braces.
 
         
         example:
         sentiment : Sentiment , 
         positive : positive , 
         negative : negative 
-
-
         
         {question}
         
@@ -167,28 +165,33 @@ def getReviews(URL):
     jcomments = json.dumps(comments.tolist())
     response=getSentiment()
     resp = response.replace("{",'').replace("}",'')
-    #out = response.replace("\n",'')
-    #dctReview=json.loads(out)
-    #if 'Positive' in dctReview.keys():
-    #    pos=int(dctReview['Positive'])
-    #    neg=int(dctReview['Negative'])
-    #else:
-    #    pos=int(dctReview['positive'])
-    #    neg=int(dctReview['negative'])
-    #simple = pd.DataFrame({
-    #'Positive & Negative Sentiments': ['Positive', 'Negative'],
-    #'Number of comments': [pos, neg]
-    #    })
-    #
-    #return resp,gr.BarPlot.update(
-    #        simple,
-    #        x="Positive & Negative Sentiments",
-    #        y="Number of comments",
-    #        title="",
-    #        #tooltip=['a', 'b'],
-    #        y_lim=[0, pos+20]
-    #    )
-    return resp
+    out = response.replace("\n",'')
+    try:
+        dctReview=json.loads(response)
+        if 'Positive' in dctReview.keys():
+            pos=int(dctReview['Positive'])
+            neg=int(dctReview['Negative'])
+        else:
+            pos=int(dctReview['positive'])
+            neg=int(dctReview['negative'])
+    except:
+        pos=0
+        neg=0
+        
+    simple = pd.DataFrame({
+    'Positive & Negative Sentiments': ['Positive', 'Negative'],
+    'Number of comments': [pos, neg]
+       })
+    
+    return resp,gr.BarPlot.update(
+           simple,
+           x="Positive & Negative Sentiments",
+           y="Number of comments",
+           title="",
+           #tooltip=['a', 'b'],
+           y_lim=[0, pos+20]
+       )
+    
     
     
 
@@ -241,7 +244,7 @@ def main():
                 #map = gr.Plot()
                 #plot= gr.Plot(16,0)
                 #gr.BarPlot()
-                #plot = gr.BarPlot(label = "Graphical Representation",min_width=100) #show_label=False
+                plot = gr.BarPlot(label = "Graphical Representation",min_width=100) #show_label=False
         
         
         #with gr.Column():
@@ -249,7 +252,7 @@ def main():
                 
         with gr.Row():
                 button1 = gr.Button("Submit")
-                button1.click(getReviews,inputs=text1URL,outputs=text2URL) #outputs=[text2URL,plot]
+                button1.click(getReviews,inputs=text1URL,outputs=[text2URL,plot]) #outputs=[text2URL,plot]
                 #button1.click(getgraph,inputs=,outputs=)
 
         with gr.Row():
@@ -260,7 +263,7 @@ def main():
                 button1 = gr.Button("OK")
                 button1.click(CustomChatGPT,text1QA,text2QA)
 
-    demo.launch() #server_name="0.0.0.0"
+    demo.launch(server_name="0.0.0.0") #server_name="0.0.0.0"
 
 if __name__ == "__main__":
     main()
